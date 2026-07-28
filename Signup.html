@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Order Management System</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="Style.css">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2>Create Account</h2>
+                <p>Register a new system user</p>
+            </div>
+            
+            <form onsubmit="return false;">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-control" placeholder="Enter username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Re-enter password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="role">User Role</label>
+                    <select id="role" name="role" class="form-control" required>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="CASHIER" selected>CASHIER</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-block" onclick="handleSignup()">
+                    Register User
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Already have an account? <a href="Login.html">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        function handleSignup(){
+            let username = $("#username").val().trim();
+            let password = $("#password").val().trim();
+            let confirmPassword = $("#confirmPassword").val().trim();
+            let role = $("#role").val().trim();
+
+            if(!username) {
+                alert("Please enter Username.");
+                return;
+            }
+            if(!password) {
+                alert("Please enter Password.");
+                return;
+            }
+            if(password !== confirmPassword) {
+                alert("Passwords do not match.");
+                return;
+            }
+            if(!role) {
+                alert("Please select User Role.");
+                return;
+            }
+            
+            let obj = JSON.stringify({"username":username, "password":password, "role":role});
+
+            $.ajax({
+                url:"http://localhost:8080/api/users",
+                type:"POST",
+                contentType:"application/json",
+                data: obj,
+                headers:{
+                    'Authorization':'Bearer '+localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    alert("User registered successfully!");
+                    window.location.href = "Login.html";
+                },
+                error: function(response){
+                    if(response.status === 409){
+                        alert("Username already exists.");
+                    } else {
+                        alert("Registration failed. Please try again.");
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Management - Order Management System</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="Style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="Dashboard.html" class="navbar-brand">
+            Order<span>Manager</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="Dashboard.html">Dashboard</a></li>
+            <li><a href="Customer.html" class="active">Customers</a></li>
+            <li><a href="Item.html">Items</a></li>
+            <li><a href="Order.html">Orders</a></li>
+            <li><a href="Login.html" class="btn-logout">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>Customer Management</h1>
+            <p>Manage customer profiles, registration, and updates.</p>
+        </div>
+
+        <div class="grid-3">
+            <!-- Customer Form Card -->
+            <div class="card">
+                <div class="card-title">Customer Form</div>
+                <form onsubmit="return false;">
+                    <!-- CustomerDTO fields -->
+                    <div class="form-group">
+                        <label for="customerId">Customer ID</label>
+                        <input type="number" id="customerId" name="customerId" class="form-control" placeholder="Auto-generated (Enter for Search)" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customerName">Customer Name</label>
+                        <input type="text" id="customerName" name="customerName" class="form-control" placeholder="Enter customer name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="Enter email address" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number</label>
+                        <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control" placeholder="Enter phone number" required>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary" onclick="handleSave()">Save</button>
+                        <button type="button" class="btn btn-warning" onclick="handleUpdate()">Update</button>
+                        <button type="button" class="btn btn-danger" onclick="handleDelete()">Delete</button>
+                        <button type="button" class="btn btn-secondary" onclick="handleSearch()">Search</button>
+                        <button type="button" class="btn btn-outline" onclick="handleClear()">Clear</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Customer Table Card -->
+            <div class="card">
+                <div class="card-title">
+                    <span>Customer List</span>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="loadAll()">Refresh List</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table" id="customerTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Customer Name</th>
+                                <th>Email</th>
+                                <th>Phone Number</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTblBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            loadAll();
+        });
+
+        function handleSave(){
+            let customerName = $('#customerName').val().trim();
+            let email = $('#email').val().trim();
+            let phoneNumber = $('#phoneNumber').val().trim();
+
+            if(!customerName) {
+                alert("Please enter Customer Name.");
+                return;
+            }
+            if(!email) {
+                alert("Please enter Email Address.");
+                return;
+            }
+            if(!phoneNumber) {
+                alert("Please enter Phone Number.");
+                return;
+            }
+
+            let obj = JSON.stringify({"customerName": customerName, "email": email, "phoneNumber": phoneNumber});
+
+            $.ajax({
+                url: "http://localhost:8080/api/customers",
+                type: "POST",
+                contentType: "application/json",
+                data: obj,
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    alert("Customer saved successfully!");
+                    handleClear();
+                    loadAll();
+                },
+                error: function(response){
+                    alert("Error saving customer.");
+                }
+            });
+        }
+
+        function handleUpdate(){
+            let customerId = $('#customerId').val().trim();
+            let customerName = $('#customerName').val().trim();
+            let email = $('#email').val().trim();
+            let phoneNumber = $('#phoneNumber').val().trim();
+
+            if(!customerId) {
+                alert("Please select a customer from list or enter ID to update!");
+                return;
+            }
+            if(!customerName) {
+                alert("Please enter Customer Name.");
+                return;
+            }
+            if(!email) {
+                alert("Please enter Email Address.");
+                return;
+            }
+            if(!phoneNumber) {
+                alert("Please enter Phone Number.");
+                return;
+            }
+
+            let obj = JSON.stringify({
+                "customerId": parseInt(customerId),
+                "customerName": customerName,
+                "email": email,
+                "phoneNumber": phoneNumber
+            });
+
+            $.ajax({
+                url: "http://localhost:8080/api/customers",
+                type: "PUT",
+                contentType: "application/json",
+                data: obj,
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    alert("Customer updated successfully!");
+                    handleClear();
+                    loadAll();
+                },
+                error: function(response){
+                    alert("Error updating customer.");
+                }
+            });
+        }
+
+        function handleDelete(id){
+            let customerId = id || $('#customerId').val().trim();
+
+            if(!customerId) {
+                alert("Please select or enter a Customer ID to delete!");
+                return;
+            }
+
+            if(!confirm("Are you sure you want to delete Customer ID: " + customerId + "?")) {
+                return;
+            }
+
+            $.ajax({
+                url: "http://localhost:8080/api/customers/" + customerId,
+                type: "DELETE",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    alert("Customer deleted successfully!");
+                    handleClear();
+                    loadAll();
+                },
+                error: function(response){
+                    alert("Error deleting customer.");
+                }
+            });
+        }
+
+        function handleSearch(){
+            let customerId = prompt("Enter Customer ID to search:");
+            if(!customerId) return;
+
+            $.ajax({
+                url: "http://localhost:8080/api/customers/" + customerId,
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    if(response.body) {
+                        let c = response.body;
+                        $('#customerId').val(c.customerId);
+                        $('#customerName').val(c.customerName);
+                        $('#email').val(c.email);
+                        $('#phoneNumber').val(c.phoneNumber);
+                    } else {
+                        alert("Customer not found.");
+                    }
+                },
+                error: function(response){
+                    alert("Customer not found.");
+                }
+            });
+        }
+
+        function handleClear(){
+            $('#customerId').val('');
+            $('#customerName').val('');
+            $('#email').val('');
+            $('#phoneNumber').val('');
+        }
+
+        function loadAll(){
+            $.ajax({
+                url: "http://localhost:8080/api/customers/all",
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    let list = response.body || [];
+                    let rows = "";
+                    list.forEach(c => {
+                        rows += `<tr>
+                            <td>${c.customerId}</td>
+                            <td>${c.customerName}</td>
+                            <td>${c.email}</td>
+                            <td>${c.phoneNumber}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="selectForEdit(${c.customerId}, '${c.customerName}', '${c.email}', '${c.phoneNumber}')">Edit</button>
+                                <button class="btn btn-sm btn-danger" onclick="handleDelete(${c.customerId})">Delete</button>
+                            </td>
+                        </tr>`;
+                    });
+                    $('#customerTblBody').html(rows);
+                },
+                error: function(response){
+                    console.error("Failed to load customers", response);
+                }
+            });
+        }
+
+        function selectForEdit(id, name, email, phone) {
+            $('#customerId').val(id);
+            $('#customerName').val(name);
+            $('#email').val(email);
+            $('#phoneNumber').val(phone);
+        }
+    </script>
+</body>
+</html>

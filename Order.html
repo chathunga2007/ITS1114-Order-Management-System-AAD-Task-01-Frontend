@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management - Order Management System</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="Style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="Dashboard.html" class="navbar-brand">
+            Order<span>Manager</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="Dashboard.html">Dashboard</a></li>
+            <li><a href="Customer.html">Customers</a></li>
+            <li><a href="Item.html">Items</a></li>
+            <li><a href="Order.html" class="active">Orders</a></li>
+            <li><a href="Login.html" class="btn-logout">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>Order Management</h1>
+            <p>Place new orders, calculate totals, and filter order history.</p>
+        </div>
+
+        <div class="grid-2">
+            <!-- Place Order Form -->
+            <div class="card">
+                <div class="card-title">Place New Order (PlaceOrderDTO)</div>
+                <form onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="customerId">Select / Enter Customer ID</label>
+                        <div class="search-bar" style="margin-bottom: 0;">
+                            <input type="number" id="customerId" name="customerId" class="form-control" placeholder="Enter Customer ID (e.g. 1)" required>
+                            <button type="button" class="btn btn-secondary" onclick="verifyCustomer()">Check Customer</button>
+                        </div>
+                        <small id="customerInfo" style="color: var(--secondary-color); margin-top: 0.25rem; display: block;"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addItemId">Add Item to Order (Item ID)</label>
+                        <div class="search-bar" style="margin-bottom: 0;">
+                            <input type="number" id="addItemId" class="form-control" placeholder="Enter Item ID (e.g. 101)">
+                            <button type="button" class="btn btn-secondary" onclick="addItemToCart()">Add Item</button>
+                        </div>
+                    </div>
+
+                    <!-- Selected Items List -->
+                    <div class="table-responsive" style="margin-top: 1rem;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Item ID</th>
+                                    <th>Item Name</th>
+                                    <th>Price (LKR)</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartItemsTblBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="summary-box">
+                        <div>
+                            <div class="summary-title">Total Amount</div>
+                            <div class="summary-value" id="orderTotal">LKR 0.00</div>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="handlePlaceOrder()">
+                            Submit Order
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Filter Orders Card -->
+            <div class="card">
+                <div class="card-title">Order History & Filter (FilterOrderDTO)</div>
+                
+                <div class="form-group">
+                    <label for="filterCustomerName">Filter by Customer Name (/api/orders/filter)</label>
+                    <div class="search-bar" style="margin-bottom: 0;">
+                        <input type="text" id="filterCustomerName" class="form-control" placeholder="Enter Customer Name">
+                        <button type="button" class="btn btn-secondary" onclick="filterByCustomerName()">Search</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="filterCustomerId">Get Orders by Customer ID (/api/orders/customer/{id})</label>
+                    <div class="search-bar" style="margin-bottom: 0;">
+                        <input type="number" id="filterCustomerId" class="form-control" placeholder="Enter Customer ID">
+                        <button type="button" class="btn btn-outline" onclick="filterByCustomerId()">Fetch Orders</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="margin-top: 1rem;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer Name</th>
+                                <th>Items</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersFilterTblBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cartItems = [];
+        let totalAmount = 0.0;
+
+        $(document).ready(function() {
+            loadAllOrders();
+        });
+
+        function verifyCustomer() {
+            let id = $('#customerId').val().trim();
+
+            if(!id) {
+                alert("Please enter a Customer ID!");
+                return;
+            }
+
+            $.ajax({
+                url: "http://localhost:8080/api/customers/" + id,
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    if(response.body) {
+                        $('#customerInfo').css('color', 'var(--secondary-color)').text("Selected: " + response.body.customerName + " (" + response.body.email + ")");
+                    } else {
+                        $('#customerInfo').css('color', 'var(--danger-color)').text("Customer not found.");
+                    }
+                },
+                error: function() {
+                    $('#customerInfo').css('color', 'var(--danger-color)').text("Customer search failed.");
+                }
+            });
+        }
+
+        function addItemToCart() {
+            let itemId = $('#addItemId').val().trim();
+
+            if(!itemId) {
+                alert("Please enter Item ID!");
+                return;
+            }
+
+            $.ajax({
+                url: "http://localhost:8080/api/items/" + itemId,
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    if(response.body) {
+                        let item = response.body;
+                        cartItems.push(item);
+                        renderCart();
+                        $('#addItemId').val('');
+                    } else {
+                        alert("Item ID not found!");
+                    }
+                },
+                error: function() {
+                    alert("Failed to fetch item details.");
+                }
+            });
+        }
+
+        function renderCart() {
+            let rows = "";
+            totalAmount = 0.0;
+
+            cartItems.forEach((item, index) => {
+                let price = parseFloat(item.itemPrice) || 0;
+                totalAmount += price;
+                rows += `<tr>
+                    <td>${item.itemId}</td>
+                    <td>${item.itemName}</td>
+                    <td>${price.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">Remove</button>
+                    </td>
+                </tr>`;
+            });
+
+            $('#cartItemsTblBody').html(rows);
+            $('#orderTotal').text("LKR " + totalAmount.toFixed(2));
+        }
+
+        function removeFromCart(index) {
+            cartItems.splice(index, 1);
+            renderCart();
+        }
+
+        function handlePlaceOrder() {
+            let customerId = $('#customerId').val().trim();
+
+            if(!customerId) {
+                alert("Please enter a valid Customer ID!");
+                return;
+            }
+
+            if(cartItems.length === 0) {
+                alert("Please add at least one item to place an order!");
+                return;
+            }
+
+            let itemIdList = cartItems.map(item => parseInt(item.itemId));
+
+            let obj = JSON.stringify({
+                "customerId": parseInt(customerId),
+                "total": totalAmount,
+                "itemIdList": itemIdList
+            });
+
+            $.ajax({
+                url: "http://localhost:8080/api/orders",
+                type: "POST",
+                contentType: "application/json",
+                data: obj,
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    alert("Order placed successfully!");
+                    cartItems = [];
+                    renderCart();
+                    $('#customerId').val('');
+                    $('#customerInfo').text('');
+                    loadAllOrders();
+                },
+                error: function(response){
+                    alert("Error placing order.");
+                }
+            });
+        }
+
+        function filterByCustomerName() {
+            let cName = $('#filterCustomerName').val().trim();
+            $.ajax({
+                url: "http://localhost:8080/api/orders/filter?customerName=" + encodeURIComponent(cName),
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    renderOrdersTable(response.body || []);
+                },
+                error: function(){
+                    alert("Error filtering orders by customer name.");
+                }
+            });
+        }
+
+        function filterByCustomerId() {
+            let cId = $('#filterCustomerId').val().trim();
+            if(!cId) {
+                alert("Please enter Customer ID");
+                return;
+            }
+            $.ajax({
+                url: "http://localhost:8080/api/orders/customer/" + cId,
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    renderOrdersTable(response.body || []);
+                },
+                error: function(){
+                    alert("Error getting orders by customer ID.");
+                }
+            });
+        }
+
+        function loadAllOrders() {
+            $.ajax({
+                url: "http://localhost:8080/api/orders/filter?customerName=",
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    renderOrdersTable(response.body || []);
+                },
+                error: function(err){
+                    console.error("Error loading orders", err);
+                }
+            });
+        }
+
+        function renderOrdersTable(list) {
+            let rows = "";
+            list.forEach(ord => {
+                let itemNames = (ord.itemList || []).map(i => i.itemName).join(", ");
+                rows += `<tr>
+                    <td>${ord.orderId}</td>
+                    <td>${ord.customerName || 'N/A'}</td>
+                    <td>${itemNames || 'No Items'}</td>
+                    <td><span class="badge badge-cashier">Completed</span></td>
+                </tr>`;
+            });
+            $('#ordersFilterTblBody').html(rows);
+        }
+    </script>
+</body>
+</html>

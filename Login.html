@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Order Management System</title>
+    <script src ="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="Style.css">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2>Welcome Back</h2>
+                <p>Login to Order Management System</p>
+            </div>
+            
+            <form onsubmit="return false;">
+                <div class="form-group">
+                    <label for="userName">Username</label>
+                    <input type="text" id="userName" name="userName" class="form-control" placeholder="Enter username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-block" onclick="handleLogin()">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="Signup.html">Sign Up</a></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        function handleLogin(){
+            let userName = $('#userName').val().trim();
+            let password = $('#password').val().trim();
+
+            if(!userName) {
+                alert("Please enter Username.");
+                return;
+            }
+            if(!password) {
+                alert("Please enter Password.");
+                return;
+            }
+
+            let obj = JSON.stringify({"userName":userName, "password":password});
+
+            $.ajax({
+                url:"http://localhost:8080/api/users/login",
+                type:"POST",
+                contentType:"application/json",
+                data: obj,
+                success: function(response) {
+                    console.log(response);
+
+                    localStorage.setItem("JWT", response.body.token);
+                    localStorage.setItem("userId", response.body.userId);
+
+                    console.log(localStorage.getItem("JWT"));
+                    alert("Login Successfully!");
+                    
+                    window.location.href = "Dashboard.html";
+                },
+                error: function(response) {
+                    if(response.status===403){
+                        alert("Invalid Credentials");
+                    } else {
+                        alert("Login failed. Please try again.");
+                    }
+                }
+            })
+        }
+    </script>
+</body>
+</html>

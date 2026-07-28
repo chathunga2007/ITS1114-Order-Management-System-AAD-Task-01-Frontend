@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Management - Order Management System</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="Style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="Dashboard.html" class="navbar-brand">
+            Order<span>Manager</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="Dashboard.html">Dashboard</a></li>
+            <li><a href="Customer.html">Customers</a></li>
+            <li><a href="Item.html" class="active">Items</a></li>
+            <li><a href="Order.html">Orders</a></li>
+            <li><a href="Login.html" class="btn-logout">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>Item Management</h1>
+            <p>Manage product inventory, item details, prices, and stock levels.</p>
+        </div>
+
+        <div class="grid-3">
+            <!-- Item Form Card -->
+            <div class="card">
+                <div class="card-title">Item Form</div>
+                <form onsubmit="return false;">
+                    <!-- ItemDTO fields -->
+                    <div class="form-group">
+                        <label for="itemId">Item ID</label>
+                        <input type="number" id="itemId" name="itemId" class="form-control" placeholder="Auto-generated (Enter for Search)" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="itemName">Item Name</label>
+                        <input type="text" id="itemName" name="itemName" class="form-control" placeholder="Enter item name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="itemQTY">Quantity (itemQTY)</label>
+                        <input type="number" id="itemQTY" name="itemQTY" class="form-control" placeholder="Enter stock quantity" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="itemPrice">Unit Price (itemPrice)</label>
+                        <input type="number" step="0.01" id="itemPrice" name="itemPrice" class="form-control" placeholder="Enter unit price" required>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary" onclick="handleSave()">Save</button>
+                        <button type="button" class="btn btn-warning" onclick="handleUpdate()">Update</button>
+                        <button type="button" class="btn btn-danger" onclick="handleDelete()">Delete</button>
+                        <button type="button" class="btn btn-secondary" onclick="handleSearch()">Search</button>
+                        <button type="button" class="btn btn-outline" onclick="handleClear()">Clear</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Item List & Search Card -->
+            <div class="card">
+                <div class="card-title">Item Inventory</div>
+                
+                <!-- Filter bar matching /api/items/filter?itemName=... -->
+                <div class="search-bar">
+                    <input type="text" id="filterItemName" class="form-control" placeholder="Filter by item name...">
+                    <button type="button" class="btn btn-secondary" onclick="handleFilter()">Filter</button>
+                    <button type="button" class="btn btn-outline" onclick="loadAllItems()">Refresh</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table" id="itemTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Item Name</th>
+                                <th>QTY</th>
+                                <th>Price (LKR)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemTblBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            loadAllItems();
+        });
+
+        function handleSave(){
+            let itemName = $('#itemName').val().trim();
+            let itemQTY = $('#itemQTY').val().trim();
+            let itemPrice = $('#itemPrice').val().trim();
+
+            if(!itemName) {
+                alert("Please enter Item Name.");
+                return;
+            }
+            if(!itemQTY) {
+                alert("Please enter Quantity.");
+                return;
+            }
+            if(!itemPrice) {
+                alert("Please enter Unit Price.");
+                return;
+            }
+
+            let obj = JSON.stringify({
+                "itemName": itemName,
+                "itemQTY": itemQTY,
+                "itemPrice": itemPrice
+            });
+
+            $.ajax({
+                url: "http://localhost:8080/api/items",
+                type: "POST",
+                contentType: "application/json",
+                data: obj,
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    alert("Item saved successfully!");
+                    handleClear();
+                    loadAllItems();
+                },
+                error: function(response){
+                    alert("Error saving item.");
+                }
+            });
+        }
+
+        function handleUpdate(){
+            let itemId = $('#itemId').val().trim();
+            let itemName = $('#itemName').val().trim();
+            let itemQTY = $('#itemQTY').val().trim();
+            let itemPrice = $('#itemPrice').val().trim();
+
+            if(!itemId) {
+                alert("Please select an item to update!");
+                return;
+            }
+            if(!itemName) {
+                alert("Please enter Item Name.");
+                return;
+            }
+            if(!itemQTY) {
+                alert("Please enter Quantity.");
+                return;
+            }
+            if(!itemPrice) {
+                alert("Please enter Unit Price.");
+                return;
+            }
+
+            let obj = JSON.stringify({
+                "itemId": parseInt(itemId),
+                "itemName": itemName,
+                "itemQTY": itemQTY,
+                "itemPrice": itemPrice
+            });
+
+            $.ajax({
+                url: "http://localhost:8080/api/items",
+                type: "PUT",
+                contentType: "application/json",
+                data: obj,
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    alert("Item updated successfully!");
+                    handleClear();
+                    loadAllItems();
+                },
+                error: function(response){
+                    alert("Error updating item.");
+                }
+            });
+        }
+
+        function handleDelete(id){
+            let itemId = id || $('#itemId').val().trim();
+
+            if(!itemId) {
+                alert("Please select or enter an Item ID to delete!");
+                return;
+            }
+
+            if(!confirm("Are you sure you want to delete Item ID: " + itemId + "?")) {
+                return;
+            }
+
+            $.ajax({
+                url: "http://localhost:8080/api/items/" + itemId,
+                type: "DELETE",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    alert("Item deleted successfully!");
+                    handleClear();
+                    loadAllItems();
+                },
+                error: function(response){
+                    alert("Error deleting item.");
+                }
+            });
+        }
+
+        function handleSearch(){
+            let itemId = prompt("Enter Item ID to search:");
+            if(!itemId) return;
+
+            $.ajax({
+                url: "http://localhost:8080/api/items/" + itemId,
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    if(response.body) {
+                        let item = response.body;
+                        $('#itemId').val(item.itemId);
+                        $('#itemName').val(item.itemName);
+                        $('#itemQTY').val(item.itemQTY);
+                        $('#itemPrice').val(item.itemPrice);
+                    } else {
+                        alert("Item not found.");
+                    }
+                },
+                error: function(response){
+                    alert("Item not found.");
+                }
+            });
+        }
+
+        function handleFilter(){
+            let searchName = $('#filterItemName').val().trim();
+            if(!searchName) {
+                loadAllItems();
+                return;
+            }
+
+            $.ajax({
+                url: "http://localhost:8080/api/items/filter?itemName=" + encodeURIComponent(searchName),
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    renderItemTable(response.body || []);
+                },
+                error: function(response){
+                    alert("Error filtering items.");
+                }
+            });
+        }
+
+        function handleClear(){
+            $('#itemId').val('');
+            $('#itemName').val('');
+            $('#itemQTY').val('');
+            $('#itemPrice').val('');
+            $('#filterItemName').val('');
+        }
+
+        function loadAllItems(){
+            $.ajax({
+                url: "http://localhost:8080/api/items/all",
+                type: "GET",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem("JWT")
+                },
+                success: function(response){
+                    console.log(response);
+                    renderItemTable(response.body || []);
+                },
+                error: function(response){
+                    console.error("Failed to load items", response);
+                }
+            });
+        }
+
+        function renderItemTable(list) {
+            let rows = "";
+            list.forEach(i => {
+                rows += `<tr>
+                    <td>${i.itemId}</td>
+                    <td>${i.itemName}</td>
+                    <td>${i.itemQTY}</td>
+                    <td>${i.itemPrice}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" onclick="selectItemForEdit(${i.itemId}, '${i.itemName}', '${i.itemQTY}', '${i.itemPrice}')">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="handleDelete(${i.itemId})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            $('#itemTblBody').html(rows);
+        }
+
+        function selectItemForEdit(id, name, qty, price) {
+            $('#itemId').val(id);
+            $('#itemName').val(name);
+            $('#itemQTY').val(qty);
+            $('#itemPrice').val(price);
+        }
+    </script>
+</body>
+</html>

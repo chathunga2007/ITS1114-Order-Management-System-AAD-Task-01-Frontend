@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Order Management System</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="Style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="Dashboard.html" class="navbar-brand">
+            Order<span>Manager</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="Dashboard.html" class="active">Dashboard</a></li>
+            <li><a href="Customer.html">Customers</a></li>
+            <li><a href="Item.html">Items</a></li>
+            <li><a href="Order.html">Orders</a></li>
+            <li><a href="#" onclick="handleLogout()" class="btn-logout">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>Dashboard Overview</h1>
+            <p>Welcome to the Order Management System panel.</p>
+        </div>
+
+        <!-- Quick Summary Stat Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="title">Total Customers</div>
+                <div class="value" id="statCustomers">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="title">Total Items in Stock</div>
+                <div class="value" id="statItems">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="title">Total Orders</div>
+                <div class="value" id="statOrders">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="title">System User ID</div>
+                <div class="value" style="font-size: 1.4rem; color: var(--secondary-color);" id="userIdBadge">User</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- Navigation Shortcuts Card -->
+            <div class="card">
+                <div class="card-title">Quick Actions</div>
+                <div class="btn-group" style="flex-direction: column;">
+                    <a href="Customer.html" class="btn btn-primary">Manage Customers</a>
+                    <a href="Item.html" class="btn btn-secondary">Manage Items</a>
+                    <a href="Order.html" class="btn btn-warning">Place New Order</a>
+                    <a href="Signup.html" class="btn btn-outline">Register New User</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            let userId = localStorage.getItem("userId");
+            if(userId) {
+                $('#userIdBadge').text("ID: " + userId);
+            }
+            loadDashboardStats();
+        });
+
+        function loadDashboardStats() {
+            let jwt = localStorage.getItem("JWT");
+            if(!jwt) return;
+
+            // Fetch Customers count
+            $.ajax({
+                url: "http://localhost:8080/api/customers/all",
+                type: "GET",
+                headers: { 'Authorization': 'Bearer ' + jwt },
+                success: function(res) {
+                    let count = (res.body || []).length;
+                    $('#statCustomers').text(count);
+                }
+            });
+
+            // Fetch Items count
+            $.ajax({
+                url: "http://localhost:8080/api/items/all",
+                type: "GET",
+                headers: { 'Authorization': 'Bearer ' + jwt },
+                success: function(res) {
+                    let count = (res.body || []).length;
+                    $('#statItems').text(count);
+                }
+            });
+
+            // Fetch Orders count
+            $.ajax({
+                url: "http://localhost:8080/api/orders/filter?customerName=",
+                type: "GET",
+                headers: { 'Authorization': 'Bearer ' + jwt },
+                success: function(res) {
+                    let count = (res.body || []).length;
+                    $('#statOrders').text(count);
+                }
+            });
+        }
+
+        function handleLogout() {
+            localStorage.removeItem("JWT");
+            localStorage.removeItem("userId");
+            alert("Logged out successfully!");
+            window.location.href = "Login.html";
+        }
+    </script>
+</body>
+</html>
