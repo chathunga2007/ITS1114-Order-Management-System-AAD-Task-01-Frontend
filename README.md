@@ -118,4 +118,3 @@ The frontend seamlessly connects to the Spring Boot REST API running on `http://
 <div align="center">
   Developed with ❤️ by **Chathunga Bimsara** for **ITS1114 / AAD Task 01** &nbsp;|&nbsp; IJSE Task 01 Project Frontend
 </div>
-- **GitHub**: [@chathunga2007](https://github.com/chathunga2007)
