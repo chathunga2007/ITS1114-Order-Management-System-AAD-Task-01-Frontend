@@ -115,4 +115,4 @@ The frontend seamlessly connects to the Spring Boot REST API running on `http://
 
 ## 👨‍💻 Author
 
-Developed with ❤️ by **Chathunga Bimsara** &nbsp;|&nbsp; IJSE Task 01 Project Frontend
+Developed with ❤️ by **Chathunga Bimsara** &nbsp;|&nbsp; IJSE ITS1114 - AAD Spring Security & User Management Frontend(Task 01)
